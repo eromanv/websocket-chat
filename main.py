@@ -1,16 +1,19 @@
-from fastapi import FastAPI, WebSocket, Depends, HTTPException, WebSocketDisconnect
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.future import select
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
-from alembic import command, config
-from pydantic import BaseModel
+import asyncio
+import os
 from datetime import datetime
 from typing import List, Optional
-import asyncio
+
 from dotenv import load_dotenv
-import os
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from pydantic import BaseModel
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.future import select
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+
+from alembic import command, config
 
 load_dotenv()
 
@@ -140,3 +143,18 @@ async def get_chat_history(
     )
     messages = result.scalars().all()
     return {"messages": messages}
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="WebSocket Chat API")
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(openapi_url="/openapi.json", title="WebSocket Chat API")
+
+
+@app.get("/openapi.json", include_in_schema=False)
+async def openapi():
+    return get_openapi(title="WebSocket Chat API", version="1.0.0", routes=app.routes)
